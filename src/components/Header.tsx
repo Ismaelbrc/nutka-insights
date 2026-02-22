@@ -5,6 +5,7 @@ const NAV_ITEMS = [
   { label: "Empresas", href: "#empresas" },
   { label: "Importações", href: "#importacoes" },
   { label: "Consumo", href: "#consumo" },
+  { label: "Micro", href: "#microeconomia" },
   { label: "Macro", href: "#macro" },
   { label: "Insights", href: "#insights" },
   { label: "Newsletter", href: "#newsletter" },

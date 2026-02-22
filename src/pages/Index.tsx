@@ -3,6 +3,7 @@ import DashboardSection from "@/components/sections/DashboardSection";
 import CompaniesSection from "@/components/sections/CompaniesSection";
 import ImportSection from "@/components/sections/ImportSection";
 import ConsumptionSection from "@/components/sections/ConsumptionSection";
+import MicroeconomySection from "@/components/sections/MicroeconomySection";
 import MacroSection from "@/components/sections/MacroSection";
 import InsightsSection from "@/components/sections/InsightsSection";
 import NewsletterSection from "@/components/sections/NewsletterSection";
@@ -19,6 +20,8 @@ const Index = () => {
         <ImportSection />
         <div className="my-4 border-t border-border" />
         <ConsumptionSection />
+        <div className="my-4 border-t border-border" />
+        <MicroeconomySection />
         <div className="my-4 border-t border-border" />
         <MacroSection />
         <div className="my-4 border-t border-border" />
