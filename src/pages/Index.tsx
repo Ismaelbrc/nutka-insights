@@ -1,12 +1,40 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import Header from "@/components/Header";
+import DashboardSection from "@/components/sections/DashboardSection";
+import CompaniesSection from "@/components/sections/CompaniesSection";
+import ImportSection from "@/components/sections/ImportSection";
+import ConsumptionSection from "@/components/sections/ConsumptionSection";
+import MacroSection from "@/components/sections/MacroSection";
+import InsightsSection from "@/components/sections/InsightsSection";
+import NewsletterSection from "@/components/sections/NewsletterSection";
 
 const Index = () => {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="container pb-12">
+        <DashboardSection />
+        <div className="my-4 border-t border-border" />
+        <CompaniesSection />
+        <div className="my-4 border-t border-border" />
+        <ImportSection />
+        <div className="my-4 border-t border-border" />
+        <ConsumptionSection />
+        <div className="my-4 border-t border-border" />
+        <MacroSection />
+        <div className="my-4 border-t border-border" />
+        <InsightsSection />
+        <div className="my-4 border-t border-border" />
+        <NewsletterSection />
+      </main>
+
+      {/* Footer */}
+      <footer className="border-t border-border bg-secondary py-4">
+        <div className="container text-center">
+          <p className="font-data text-[10px] uppercase tracking-widest text-muted-foreground">
+            Terminal Nutka © 2026 · Steel & Macro Intelligence · Dados simulados para demonstração
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };
