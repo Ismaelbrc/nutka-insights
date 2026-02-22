@@ -3,6 +3,8 @@ import { useMarketData } from "@/hooks/useMarketHooks";
 import MarketIndicatorCard from "@/components/MarketIndicatorCard";
 import TimeSeriesChart from "@/components/charts/TimeSeriesChart";
 import CorrelationPanel from "@/components/charts/CorrelationPanel";
+import SteelPricesChart from "@/components/charts/SteelPricesChart";
+import ConsumptionComparisonPanel from "@/components/charts/ConsumptionComparisonPanel";
 import HeatmapPanel from "@/components/HeatmapPanel";
 import AlertBanner from "@/components/AlertBanner";
 
@@ -14,6 +16,8 @@ const DashboardSection = () => {
   const hrcBrasil = getIndicator('hrc-brasil');
   const usdBrl = getIndicator('usd-brl');
   const ironOre = getIndicator('iron-ore');
+  const rebar = getIndicator('rebar');
+  const wireRod = getIndicator('wire-rod');
 
   return (
     <section id="dashboard" className="py-6">
@@ -57,9 +61,21 @@ const DashboardSection = () => {
         </div>
       )}
 
+      {/* Steel Prices Combined Chart */}
+      {rebar && wireRod && ironOre && (
+        <div className="mb-6">
+          <SteelPricesChart rebar={rebar} wireRod={wireRod} ironOre={ironOre} />
+        </div>
+      )}
+
+      {/* Consumption Comparison */}
+      <div className="mb-6">
+        <ConsumptionComparisonPanel />
+      </div>
+
       {/* Correlation Charts */}
-      {hrcBrasil && usdBrl && ironOre && (
-        <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {hrcBrasil && usdBrl && (
           <CorrelationPanel
             indicatorA={hrcBrasil}
             indicatorB={usdBrl}
@@ -67,15 +83,26 @@ const DashboardSection = () => {
             labelB="USD/BRL"
             colorB="hsl(30, 55%, 46%)"
           />
+        )}
+        {rebar && ironOre && (
           <CorrelationPanel
-            indicatorA={hrcBrasil}
+            indicatorA={rebar}
             indicatorB={ironOre}
-            labelA="HRC Brasil"
+            labelA="Vergalhão"
             labelB="Minério 62%"
             colorB="hsl(25, 76%, 40%)"
           />
-        </div>
-      )}
+        )}
+        {wireRod && ironOre && (
+          <CorrelationPanel
+            indicatorA={wireRod}
+            indicatorB={ironOre}
+            labelA="Fio-Máquina"
+            labelB="Minério 62%"
+            colorB="hsl(25, 76%, 40%)"
+          />
+        )}
+      </div>
     </section>
   );
 };
