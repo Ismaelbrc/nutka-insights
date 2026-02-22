@@ -94,6 +94,7 @@ export const marketIndicators: MarketIndicator[] = [
   buildIndicator('hrc-eua', 'HRC EUA', 'USD/t', 780, 0.28, -0.03, 'steel'),
   buildIndicator('hrc-brasil', 'HRC Brasil', 'BRL/t', 4250, 0.18, 0.04, 'steel'),
   buildIndicator('rebar', 'Vergalhão Brasil', 'BRL/t', 4890, 0.15, -0.02, 'steel'),
+  buildIndicator('wire-rod', 'Fio-Máquina Brasil', 'BRL/t', 4650, 0.16, -0.01, 'steel'),
   buildIndicator('scrap', 'Sucata', 'BRL/t', 1850, 0.20, 0.03, 'steel'),
   buildIndicator('usd-brl', 'USD/BRL', '', 5.20, 0.14, 0.08, 'currency'),
   buildIndicator('di-futuro', 'DI Futuro Jan/27', '%', 14.50, 0.12, -0.02, 'macro'),
@@ -103,6 +104,64 @@ export const marketIndicators: MarketIndicator[] = [
   buildIndicator('pib', 'PIB Brasil', '% a.a.', 2.50, 0.15, 0.02, 'macro'),
   buildIndicator('icc', 'Confiança Construção', 'pts', 96, 0.08, 0.01, 'construction'),
 ];
+
+// --- Consumption / Demand Apparent Data ---
+
+export type ConsumptionPoint = {
+  year: string;
+  quarter?: string;
+  valueBrazil: number;
+  valueGoias: number;
+};
+
+function generateConsumptionData(): ConsumptionPoint[] {
+  const data: ConsumptionPoint[] = [];
+  const baseYearBrazil = 8500; // mil toneladas
+  const goiasShare = 0.045; // ~4.5% do Brasil
+
+  for (let y = 2014; y <= 2024; y++) {
+    // Simulate cycles: dip in 2015-2016, recovery, covid dip 2020, boom 2021-2022
+    let factor = 1;
+    if (y === 2015) factor = 0.88;
+    else if (y === 2016) factor = 0.82;
+    else if (y === 2017) factor = 0.87;
+    else if (y === 2018) factor = 0.92;
+    else if (y === 2019) factor = 0.95;
+    else if (y === 2020) factor = 0.85;
+    else if (y === 2021) factor = 1.08;
+    else if (y === 2022) factor = 1.12;
+    else if (y === 2023) factor = 1.05;
+    else if (y === 2024) factor = 1.07;
+
+    const brazil = Math.round(baseYearBrazil * factor * (1 + (Math.random() - 0.5) * 0.04));
+    // Goiás grows slightly faster due to agribusiness construction
+    const goiasGrowthExtra = y >= 2020 ? 1.15 : 1.0;
+    const goias = Math.round(brazil * goiasShare * goiasGrowthExtra * (1 + (Math.random() - 0.5) * 0.06));
+
+    data.push({ year: String(y), valueBrazil: brazil, valueGoias: goias });
+  }
+  return data;
+}
+
+export const consumptionApparentData: ConsumptionPoint[] = generateConsumptionData();
+
+// Generate quarterly breakdown
+export function getQuarterlyConsumption(): ConsumptionPoint[] {
+  const quarterly: ConsumptionPoint[] = [];
+  const seasonality = [0.22, 0.26, 0.28, 0.24]; // Q1-Q4 weights
+
+  for (const annual of consumptionApparentData) {
+    for (let q = 0; q < 4; q++) {
+      quarterly.push({
+        year: annual.year,
+        quarter: `Q${q + 1}`,
+        valueBrazil: Math.round(annual.valueBrazil * seasonality[q]),
+        valueGoias: Math.round(annual.valueGoias * seasonality[q]),
+      });
+    }
+  }
+  return quarterly;
+}
 
 // --- Period filter utility ---
 
