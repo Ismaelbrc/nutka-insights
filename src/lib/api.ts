@@ -30,6 +30,9 @@ export interface MacroData {
   euro:       { valor: number; data: string } | null;
   reservas:   { valor: number; data: string } | null;
   desemprego: { valor: number; data: string } | null;
+  incc12m:    { valor: number; data: string } | null; // INCC-DI acumulado 12 meses
+  pibYoY:     { valor: number; data: string } | null; // PIB variação YoY (%)
+  confianca:  { valor: number; data: string } | null; // FGV ICC (pts)
   forex: {
     usdBrl: { valor: number; variacao: number } | null;
     eurBrl: { valor: number; variacao: number } | null;
@@ -65,7 +68,8 @@ export interface CommoditiesData {
   milho:       CommodityItem | null;
   acucar:      CommodityItem | null;
   cafe:        CommodityItem | null;
-  minerioFerro:CommodityItem | null;
+  minerioFerro:CommodityItem | null; // TIO=F — Iron Ore SGX 62% Fe futures
+  acoEtf:      CommodityItem | null; // SLX — VanEck Steel ETF (proxy aço global)
   vale:        CommodityItem | null;
   gerdau:      CommodityItem | null;
 }

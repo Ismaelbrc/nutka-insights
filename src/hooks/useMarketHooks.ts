@@ -99,12 +99,17 @@ export function useMergedIndicators() {
     const overrides: Record<string, { currentValue: number; variation: number }> = {};
 
     if (macro) {
-      if (macro.selic)   overrides["selic"]   = { currentValue: macro.selic.valor,   variation: 0 };
-      if (macro.ipca12m) overrides["ipca"]    = { currentValue: macro.ipca12m.valor,  variation: 0 };
-      if (macro.dolar)   overrides["usd-brl"] = {
+      // Macro BCB
+      if (macro.selic)    overrides["selic"]   = { currentValue: macro.selic.valor,    variation: 0 };
+      if (macro.ipca12m)  overrides["ipca"]    = { currentValue: macro.ipca12m.valor,   variation: 0 };
+      if (macro.dolar)    overrides["usd-brl"] = {
         currentValue: macro.dolar.valor,
         variation:    macro.forex?.usdBrl?.variacao ?? 0,
       };
+      // Novos: INCC acumulado 12m, PIB YoY%, Confiança Construção (FGV ICC)
+      if (macro.incc12m)  overrides["incc"]    = { currentValue: macro.incc12m.valor,  variation: 0 };
+      if (macro.pibYoY)   overrides["pib"]     = { currentValue: macro.pibYoY.valor,   variation: 0 };
+      if (macro.confianca) overrides["icc"]    = { currentValue: macro.confianca.valor, variation: 0 };
     }
     if (b3?.ibovespa) {
       overrides["ibov"] = { currentValue: b3.ibovespa.valor, variation: b3.ibovespa.variacao };
