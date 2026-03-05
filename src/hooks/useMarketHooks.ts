@@ -11,14 +11,15 @@ import {
 import { getIndicators, ApiIndicator } from "@/lib/api";
 
 // Mescla valores reais do banco com séries históricas geradas
+// Nota: mysql2 retorna DECIMAL como string — forçar Number() em todos os campos numéricos
 function mergeWithApi(apiData: ApiIndicator[]): MarketIndicator[] {
   return mockIndicators.map((mock) => {
     const api = apiData.find((a) => a.name === mock.name);
     if (!api) return mock;
     return {
       ...mock,
-      currentValue: api.value,
-      variation: api.change_pct ?? mock.variation,
+      currentValue: Number(api.value),
+      variation: api.change_pct != null ? Number(api.change_pct) : mock.variation,
     };
   });
 }
