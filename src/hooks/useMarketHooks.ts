@@ -8,10 +8,21 @@ import {
   filterSeriesByPeriod,
   pearsonCorrelation,
 } from "@/data/marketData";
-import { getIndicators, ApiIndicator } from "@/lib/api";
+import {
+  getIndicators,
+  getAllData,
+  ApiIndicator,
+  AllData,
+  MacroData,
+  B3Data,
+  CommoditiesData,
+  CryptoData,
+} from "@/lib/api";
 
-// Mescla valores reais do banco com séries históricas geradas
-// Nota: mysql2 retorna DECIMAL como string — forçar Number() em todos os campos numéricos
+const POLL_INTERVAL = 30 * 60 * 1000; // 30 minutos
+
+// ─── Merge MySQL → MockIndicators ────────────────────────────────
+// mysql2 retorna DECIMAL como string — forçar Number()
 function mergeWithApi(apiData: ApiIndicator[]): MarketIndicator[] {
   return mockIndicators.map((mock) => {
     const api = apiData.find((a) => a.name === mock.name);
@@ -24,7 +35,7 @@ function mergeWithApi(apiData: ApiIndicator[]): MarketIndicator[] {
   });
 }
 
-// Label de correlação com cor para o CorrelationPanel
+// ─── Label de correlação ──────────────────────────────────────────
 function getCorrelationLabel(r: number): { text: string; color: string } {
   const abs = Math.abs(r);
   if (abs >= 0.85) return { text: r > 0 ? "Muito forte positiva" : "Muito forte negativa", color: r > 0 ? "positive" : "negative" };
@@ -33,18 +44,18 @@ function getCorrelationLabel(r: number): { text: string; color: string } {
   return { text: "Correlação fraca", color: "info" };
 }
 
-// ─── useMarketData ───────────────────────────────────────────────
+// ─── useMarketData — indicadores do MySQL (bloom_indicators) ──────
 export function useMarketData() {
   const { data: apiData, isLoading } = useQuery({
     queryKey: ["indicators"],
     queryFn: () => getIndicators(),
     staleTime: 5 * 60 * 1000,
+    refetchInterval: POLL_INTERVAL,
     retry: 1,
   });
 
   const indicators = useMemo(
-    () =>
-      apiData && apiData.length > 0 ? mergeWithApi(apiData) : mockIndicators,
+    () => apiData && apiData.length > 0 ? mergeWithApi(apiData) : mockIndicators,
     [apiData]
   );
 
@@ -58,6 +69,47 @@ export function useMarketData() {
   };
 }
 
+// ─── useLiveData — todos os dados externos (polling 30min) ────────
+export function useLiveData() {
+  const { data, isLoading, dataUpdatedAt } = useQuery<AllData>({
+    queryKey: ["liveData"],
+    queryFn:  getAllData,
+    staleTime: POLL_INTERVAL,
+    refetchInterval: POLL_INTERVAL,
+    retry: 2,
+  });
+
+  return {
+    macro:       data?.macro       ?? null,
+    b3:          data?.b3          ?? null,
+    commodities: data?.commodities ?? null,
+    crypto:      data?.crypto      ?? null,
+    updatedAt:   data?.updatedAt   ?? null,
+    isLoading,
+    dataUpdatedAt,
+  };
+}
+
+// ─── useMacro ─────────────────────────────────────────────────────
+export function useMacro(): MacroData | null {
+  return useLiveData().macro;
+}
+
+// ─── useB3 ────────────────────────────────────────────────────────
+export function useB3(): B3Data | null {
+  return useLiveData().b3;
+}
+
+// ─── useCommodities ───────────────────────────────────────────────
+export function useCommodities(): CommoditiesData | null {
+  return useLiveData().commodities;
+}
+
+// ─── useCrypto ────────────────────────────────────────────────────
+export function useCrypto(): CryptoData | null {
+  return useLiveData().crypto;
+}
+
 // ─── usePeriodFilter ─────────────────────────────────────────────
 export function usePeriodFilter(defaultPeriod: PeriodKey = "1M") {
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
@@ -67,8 +119,6 @@ export function usePeriodFilter(defaultPeriod: PeriodKey = "1M") {
 }
 
 // ─── useCorrelation ──────────────────────────────────────────────
-// Recebe objetos MarketIndicator completos (mesma assinatura original)
-// Retorna { coefficient, label: {text,color}, alignedData, nameA, nameB }
 export function useCorrelation(
   indicatorA: MarketIndicator,
   indicatorB: MarketIndicator,
