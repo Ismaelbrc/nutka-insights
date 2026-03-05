@@ -22,7 +22,6 @@ import {
 const POLL_INTERVAL = 30 * 60 * 1000; // 30 minutos
 
 // ─── Merge MySQL → MockIndicators ────────────────────────────────
-// mysql2 retorna DECIMAL como string — forçar Number()
 function mergeWithApi(apiData: ApiIndicator[]): MarketIndicator[] {
   return mockIndicators.map((mock) => {
     const api = apiData.find((a) => a.name === mock.name);
@@ -90,25 +89,51 @@ export function useLiveData() {
   };
 }
 
-// ─── useMacro ─────────────────────────────────────────────────────
-export function useMacro(): MacroData | null {
-  return useLiveData().macro;
+// ─── useMergedIndicators ─────────────────────────────────────────
+// Combina MySQL + BCB/live: sobrescreve macro com dados reais do dia
+export function useMergedIndicators() {
+  const { indicators, isLoading: loadingMysql } = useMarketData();
+  const { macro, b3, commodities, isLoading: loadingLive } = useLiveData();
+
+  const mergedIndicators = useMemo((): MarketIndicator[] => {
+    const overrides: Record<string, { currentValue: number; variation: number }> = {};
+
+    if (macro) {
+      if (macro.selic)   overrides["selic"]   = { currentValue: macro.selic.valor,   variation: 0 };
+      if (macro.ipca12m) overrides["ipca"]    = { currentValue: macro.ipca12m.valor,  variation: 0 };
+      if (macro.dolar)   overrides["usd-brl"] = {
+        currentValue: macro.dolar.valor,
+        variation:    macro.forex?.usdBrl?.variacao ?? 0,
+      };
+    }
+    if (b3?.ibovespa) {
+      overrides["ibov"] = { currentValue: b3.ibovespa.valor, variation: b3.ibovespa.variacao };
+    }
+    if (commodities) {
+      if (commodities.ouro)         overrides["ouro"]     = { currentValue: commodities.ouro.valor,         variation: commodities.ouro.variacao ?? 0 };
+      if (commodities.minerioFerro) overrides["iron-ore"] = { currentValue: commodities.minerioFerro.valor, variation: commodities.minerioFerro.variacao ?? 0 };
+    }
+
+    return indicators.map((ind) =>
+      overrides[ind.id] ? { ...ind, ...overrides[ind.id] } : ind
+    );
+  }, [indicators, macro, b3, commodities]);
+
+  const alerts = useMemo(() => detectAlerts(mergedIndicators, 2.5), [mergedIndicators]);
+
+  return {
+    indicators: mergedIndicators,
+    alerts,
+    isLoading: loadingMysql || loadingLive,
+    getIndicator: (id: string) => mergedIndicators.find((i) => i.id === id),
+  };
 }
 
-// ─── useB3 ────────────────────────────────────────────────────────
-export function useB3(): B3Data | null {
-  return useLiveData().b3;
-}
-
-// ─── useCommodities ───────────────────────────────────────────────
-export function useCommodities(): CommoditiesData | null {
-  return useLiveData().commodities;
-}
-
-// ─── useCrypto ────────────────────────────────────────────────────
-export function useCrypto(): CryptoData | null {
-  return useLiveData().crypto;
-}
+// ─── Hooks individuais por categoria ─────────────────────────────
+export function useMacro(): MacroData | null { return useLiveData().macro; }
+export function useB3(): B3Data | null { return useLiveData().b3; }
+export function useCommodities(): CommoditiesData | null { return useLiveData().commodities; }
+export function useCrypto(): CryptoData | null { return useLiveData().crypto; }
 
 // ─── usePeriodFilter ─────────────────────────────────────────────
 export function usePeriodFilter(defaultPeriod: PeriodKey = "1M") {

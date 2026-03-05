@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMarketData } from "@/hooks/useMarketHooks";
+import { useMergedIndicators } from "@/hooks/useMarketHooks";
 import MarketIndicatorCard from "@/components/MarketIndicatorCard";
 import TimeSeriesChart from "@/components/charts/TimeSeriesChart";
 import CorrelationPanel from "@/components/charts/CorrelationPanel";
@@ -9,7 +9,7 @@ import HeatmapPanel from "@/components/HeatmapPanel";
 import AlertBanner from "@/components/AlertBanner";
 
 const DashboardSection = () => {
-  const { indicators, getIndicator, alerts } = useMarketData();
+  const { indicators, getIndicator, alerts } = useMergedIndicators();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selectedIndicator = selectedId ? getIndicator(selectedId) : null;
 
