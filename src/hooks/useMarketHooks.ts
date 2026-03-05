@@ -1,72 +1,94 @@
-import { useMemo, useState, useCallback } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
-  marketIndicators,
+  marketIndicators as mockIndicators,
+  MarketIndicator,
+  PeriodKey,
+  detectAlerts,
   filterSeriesByPeriod,
   pearsonCorrelation,
   correlationLabel,
-  detectAlerts,
-  type MarketIndicator,
-  type PeriodKey,
-  type MarketAlert,
 } from "@/data/marketData";
+import { getIndicators, ApiIndicator } from "@/lib/api";
 
-// --- useMarketData ---
+// Mescla valores reais do banco com as séries históricas geradas
+function mergeWithApi(apiData: ApiIndicator[]): MarketIndicator[] {
+  return mockIndicators.map((mock) => {
+    const api = apiData.find((a) => a.name === mock.name);
+    if (!api) return mock;
+    return {
+      ...mock,
+      currentValue: api.value,
+      // change_pct do banco sobrescreve a variação diária simulada
+      variation: api.change_pct ?? mock.variation,
+    };
+  });
+}
+
 export function useMarketData() {
-  const indicators = useMemo(() => marketIndicators, []);
+  const { data: apiData, isLoading } = useQuery({
+    queryKey: ["indicators"],
+    queryFn: () => getIndicators(),
+    staleTime: 5 * 60 * 1000, // 5 min
+    retry: 1,
+    throwOnError: false,
+  });
 
-  const getIndicator = useCallback(
-    (id: string) => indicators.find((i) => i.id === id),
-    [indicators]
+  const indicators = useMemo(
+    () =>
+      apiData && apiData.length > 0 ? mergeWithApi(apiData) : mockIndicators,
+    [apiData]
   );
 
   const alerts = useMemo(() => detectAlerts(indicators, 2.5), [indicators]);
 
-  return { indicators, getIndicator, alerts };
+  return {
+    indicators,
+    isLoading,
+    getIndicator: (id: string) => indicators.find((i) => i.id === id),
+    alerts,
+  };
 }
 
-// --- usePeriodFilter ---
-export function usePeriodFilter(defaultPeriod: PeriodKey = '1Y') {
+export function usePeriodFilter(defaultPeriod: PeriodKey = "1M") {
   const [period, setPeriod] = useState<PeriodKey>(defaultPeriod);
-
-  const filterSeries = useCallback(
-    (series: { date: string; value: number }[]) => filterSeriesByPeriod(series, period),
-    [period]
-  );
-
+  const filterSeries = (series: { date: string; value: number }[]) =>
+    filterSeriesByPeriod(series, period);
   return { period, setPeriod, filterSeries };
 }
 
-// --- useCorrelation ---
 export function useCorrelation(
-  indicatorA: MarketIndicator | undefined,
-  indicatorB: MarketIndicator | undefined,
-  period: PeriodKey = '1Y'
+  indicatorAId: string,
+  indicatorBId: string,
+  period: PeriodKey = "1Y"
 ) {
+  const { getIndicator } = useMarketData();
+
   return useMemo(() => {
-    if (!indicatorA || !indicatorB) return { coefficient: 0, label: correlationLabel(0), alignedData: [] };
+    const a = getIndicator(indicatorAId);
+    const b = getIndicator(indicatorBId);
+    if (!a || !b) return null;
 
-    const seriesA = filterSeriesByPeriod(indicatorA.series, period);
-    const seriesB = filterSeriesByPeriod(indicatorB.series, period);
+    const filteredA = filterSeriesByPeriod(a.series, period);
+    const filteredB = filterSeriesByPeriod(b.series, period);
 
-    // Align by date
-    const dateSetB = new Map(seriesB.map((p) => [p.date, p.value]));
-    const aligned: { date: string; a: number; b: number }[] = [];
+    const mapB = new Map(filteredB.map((p) => [p.date, p.value]));
+    const aligned = filteredA
+      .filter((p) => mapB.has(p.date))
+      .map((p) => ({ date: p.date, a: p.value, b: mapB.get(p.date)! }));
 
-    for (const point of seriesA) {
-      const bVal = dateSetB.get(point.date);
-      if (bVal !== undefined) {
-        aligned.push({ date: point.date, a: point.value, b: bVal });
-      }
-    }
+    if (aligned.length < 2) return null;
 
-    const xVals = aligned.map((d) => d.a);
-    const yVals = aligned.map((d) => d.b);
-    const coefficient = pearsonCorrelation(xVals, yVals);
-
+    const r = pearsonCorrelation(
+      aligned.map((p) => p.a),
+      aligned.map((p) => p.b)
+    );
     return {
-      coefficient,
-      label: correlationLabel(coefficient),
-      alignedData: aligned,
+      coefficient: Math.round(r * 1000) / 1000,
+      label: correlationLabel(r),
+      data: aligned,
+      nameA: a.name,
+      nameB: b.name,
     };
-  }, [indicatorA, indicatorB, period]);
+  }, [indicatorAId, indicatorBId, period, getIndicator]);
 }
