@@ -11,7 +11,6 @@ import {
 } from "@/data/marketData";
 import { getIndicators, ApiIndicator } from "@/lib/api";
 
-// Mescla valores reais do banco com as séries históricas geradas
 function mergeWithApi(apiData: ApiIndicator[]): MarketIndicator[] {
   return mockIndicators.map((mock) => {
     const api = apiData.find((a) => a.name === mock.name);
@@ -19,7 +18,6 @@ function mergeWithApi(apiData: ApiIndicator[]): MarketIndicator[] {
     return {
       ...mock,
       currentValue: api.value,
-      // change_pct do banco sobrescreve a variação diária simulada
       variation: api.change_pct ?? mock.variation,
     };
   });
@@ -29,9 +27,8 @@ export function useMarketData() {
   const { data: apiData, isLoading } = useQuery({
     queryKey: ["indicators"],
     queryFn: () => getIndicators(),
-    staleTime: 5 * 60 * 1000, // 5 min
+    staleTime: 5 * 60 * 1000,
     retry: 1,
-    throwOnError: false,
   });
 
   const indicators = useMemo(
@@ -57,17 +54,25 @@ export function usePeriodFilter(defaultPeriod: PeriodKey = "1M") {
   return { period, setPeriod, filterSeries };
 }
 
+const DEFAULT_CORRELATION = {
+  coefficient: 0,
+  label: "Sem dados",
+  data: [] as { date: string; a: number; b: number }[],
+  nameA: "",
+  nameB: "",
+};
+
 export function useCorrelation(
   indicatorAId: string,
   indicatorBId: string,
   period: PeriodKey = "1Y"
 ) {
-  const { getIndicator } = useMarketData();
+  const { indicators } = useMarketData();
 
   return useMemo(() => {
-    const a = getIndicator(indicatorAId);
-    const b = getIndicator(indicatorBId);
-    if (!a || !b) return null;
+    const a = indicators.find((i) => i.id === indicatorAId);
+    const b = indicators.find((i) => i.id === indicatorBId);
+    if (!a || !b) return DEFAULT_CORRELATION;
 
     const filteredA = filterSeriesByPeriod(a.series, period);
     const filteredB = filterSeriesByPeriod(b.series, period);
@@ -77,7 +82,7 @@ export function useCorrelation(
       .filter((p) => mapB.has(p.date))
       .map((p) => ({ date: p.date, a: p.value, b: mapB.get(p.date)! }));
 
-    if (aligned.length < 2) return null;
+    if (aligned.length < 2) return DEFAULT_CORRELATION;
 
     const r = pearsonCorrelation(
       aligned.map((p) => p.a),
@@ -90,5 +95,5 @@ export function useCorrelation(
       nameA: a.name,
       nameB: b.name,
     };
-  }, [indicatorAId, indicatorBId, period, getIndicator]);
+  }, [indicatorAId, indicatorBId, period, indicators]);
 }
