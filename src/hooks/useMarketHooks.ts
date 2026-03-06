@@ -115,8 +115,13 @@ export function useMergedIndicators() {
       overrides["ibov"] = { currentValue: b3.ibovespa.valor, variation: b3.ibovespa.variacao };
     }
     if (commodities) {
-      if (commodities.ouro)         overrides["ouro"]     = { currentValue: commodities.ouro.valor,         variation: commodities.ouro.variacao ?? 0 };
-      if (commodities.minerioFerro) overrides["iron-ore"] = { currentValue: commodities.minerioFerro.valor, variation: commodities.minerioFerro.variacao ?? 0 };
+      if (commodities.ouro)         overrides["ouro"]      = { currentValue: commodities.ouro.valor,         variation: commodities.ouro.variacao         ?? 0 };
+      if (commodities.minerioFerro) overrides["iron-ore"]  = { currentValue: commodities.minerioFerro.valor, variation: commodities.minerioFerro.variacao  ?? 0 };
+      if (commodities.hrcUsd)       overrides["hrc-eua"]   = { currentValue: commodities.hrcUsd.valor,       variation: commodities.hrcUsd.variacao        ?? 0 };
+      if (commodities.hrcBrl)       overrides["hrc-brasil"]= { currentValue: commodities.hrcBrl.valor,       variation: commodities.hrcBrl.variacao        ?? 0 };
+      if (commodities.rebarBrl)     overrides["rebar"]     = { currentValue: commodities.rebarBrl.valor,     variation: commodities.rebarBrl.variacao      ?? 0 };
+      if (commodities.wireRodBrl)   overrides["wire-rod"]  = { currentValue: commodities.wireRodBrl.valor,   variation: commodities.wireRodBrl.variacao    ?? 0 };
+      if (commodities.scrapBrl)     overrides["scrap"]     = { currentValue: commodities.scrapBrl.valor,     variation: commodities.scrapBrl.variacao      ?? 0 };
     }
 
     return indicators.map((ind) =>

@@ -72,6 +72,12 @@ export interface CommoditiesData {
   acoEtf:      CommodityItem | null; // SLX — VanEck Steel ETF (proxy aço global)
   vale:        CommodityItem | null;
   gerdau:      CommodityItem | null;
+  hrcFutures:  CommodityItem | null; // HRC=F CME (USD/short ton — raw)
+  hrcUsd:      CommodityItem | null; // HRC EUA convertido (USD/t métrico)
+  hrcBrl:      CommodityItem | null; // HRC Brasil derivado (BRL/t)
+  rebarBrl:    CommodityItem | null; // Vergalhão Brasil derivado (BRL/t)
+  wireRodBrl:  CommodityItem | null; // Fio-Máquina Brasil derivado (BRL/t)
+  scrapBrl:    CommodityItem | null; // Sucata derivada (BRL/t)
 }
 
 export interface CoinData {
