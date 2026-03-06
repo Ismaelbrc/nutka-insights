@@ -3,6 +3,10 @@
 
 const API_BASE = "/bloomberg/api";
 
+// ─── Histórico de séries temporais ───────────────────────────────
+export interface TimeSeriesPoint { date: string; value: number }
+export type HistoryData = Record<string, TimeSeriesPoint[]>;
+
 // ─── Tipos MySQL (bloom_indicators) ──────────────────────────────
 export interface ApiIndicator {
   id: number;
@@ -169,4 +173,9 @@ export async function getCommodities(): Promise<{ ok: boolean; updatedAt: string
 
 export async function getCrypto(): Promise<{ ok: boolean; updatedAt: string; data: CryptoData }> {
   return get("/crypto");
+}
+
+export async function getHistory(): Promise<HistoryData> {
+  const res = await get<{ ok: boolean; updatedAt: string; data: HistoryData }>("/history");
+  return res.data;
 }

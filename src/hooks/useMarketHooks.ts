@@ -11,12 +11,14 @@ import {
 import {
   getIndicators,
   getAllData,
+  getHistory,
   ApiIndicator,
   AllData,
   MacroData,
   B3Data,
   CommoditiesData,
   CryptoData,
+  HistoryData,
 } from "@/lib/api";
 
 const POLL_INTERVAL = 30 * 60 * 1000; // 30 minutos
@@ -90,10 +92,18 @@ export function useLiveData() {
 }
 
 // ─── useMergedIndicators ─────────────────────────────────────────
-// Combina MySQL + BCB/live: sobrescreve macro com dados reais do dia
+// Combina MySQL + BCB/live (currentValue) + histórico real (series)
 export function useMergedIndicators() {
   const { indicators, isLoading: loadingMysql } = useMarketData();
   const { macro, b3, commodities, isLoading: loadingLive } = useLiveData();
+
+  // Histórico real: fetch único, cache 23h no cliente
+  const { data: historyData } = useQuery<HistoryData>({
+    queryKey:       ["history"],
+    queryFn:        getHistory,
+    staleTime:      23 * 60 * 60 * 1000,
+    retry:          1,
+  });
 
   const mergedIndicators = useMemo((): MarketIndicator[] => {
     const overrides: Record<string, { currentValue: number; variation: number }> = {};
@@ -124,10 +134,14 @@ export function useMergedIndicators() {
       if (commodities.scrapBrl)     overrides["scrap"]     = { currentValue: commodities.scrapBrl.valor,     variation: commodities.scrapBrl.variacao      ?? 0 };
     }
 
-    return indicators.map((ind) =>
-      overrides[ind.id] ? { ...ind, ...overrides[ind.id] } : ind
-    );
-  }, [indicators, macro, b3, commodities]);
+    return indicators.map((ind) => ({
+      ...ind,
+      // Sobrescreve series com histórico real (se disponível); mantém mock enquanto carrega
+      series: historyData?.[ind.id] ?? ind.series,
+      // Sobrescreve currentValue/variation com dados do dia
+      ...(overrides[ind.id] ?? {}),
+    }));
+  }, [indicators, macro, b3, commodities, historyData]);
 
   const alerts = useMemo(() => detectAlerts(mergedIndicators, 2.5), [mergedIndicators]);
 
